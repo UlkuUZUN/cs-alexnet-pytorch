@@ -57,13 +57,15 @@ class AlexNet(nn.Module):
         (batch, channel, h, w) = output0.size()
         
         for shift in all_shifts[1:]:
+            #It is also possible mode replicate, reflect, circular
             padded = F.pad(x, (shift[0],shift[1],shift[2],shift[3]), mode='constant')
-            cropped=padded[:, :, 0 : 32, 0 : 32 ]
-            output = self.conv(cropped)
-            output = output[:, :, 0 : 16, 0 : 16 ]
-            #output = output[:, :, 0 + shift[2]: h - shift[3], 0 + shift[0]: w - shift[1]]
+            padded_version=padded[:, :, 0 : 32, 0 : 32 ]
+            output = self.conv(padded_version)            
+            #undo shift operation
+            output = output[:, :, 0 + shift[2]: h - shift[3], 0 + shift[0]: w - shift[1]]
             
             outputs.append(output)
+        #we have tried median. It is also possible to use mean and max aggregation functions.    
         median, input_indexes =  torch.median(torch.stack(outputs), 0)
         x=median
         x = self.features(x)
